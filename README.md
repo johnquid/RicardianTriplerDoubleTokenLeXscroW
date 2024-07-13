@@ -8,10 +8,8 @@ Smart contracts for the adoption of Double Token LeXscroW Agreement as a'ricardi
 
 ## What's in this repo?
 
-- [documents/agreement.pdf](documents/agreement.pdf) - the key legal document that defines the framework. 
-- [documents/summary.pdf](documents/summary.pdf) - a helper document that summarizes the official agreement.
-- [documents/FAQ.md](documents/FAQ.md) - answers to common questions about SEAL Safe Harbor. 
-- [registry-contracts/](registry-contracts/) - the smart contracts that on-chain governance can use to signal their official adoption of the agreement. 
+- [documents/agreement.pdf](documents/agreement.pdf) - MetaLeX LeXscroW Agreement v1 
+- [registry-contracts/](registry-contracts/) - the smart contracts that parties call to parameterize and sign the agreement 
 
 ## How does it work?
 
