@@ -5,7 +5,7 @@ import "./doubleTokenLeXscroWRegistry.sol";
 import "./SignatureValidator.sol";
 
 /// @notice Contract that contains the AgreementDetails that will be deployed by the Agreement Factory.
-contract ricardian-tripler-doubleTokenLeXscroW {
+contract RicardianTriplerDoubleTokenLeXscroW {
     /// @notice The details of the agreement.
     AgreementDetailsV1 private details;
 
@@ -28,7 +28,7 @@ contract ricardian-tripler-doubleTokenLeXscroW {
     }
 }
 
-/// @notice Factory contract that creates new AgreementV1 contracts and records their adoption in the SafeHarborRegistry.
+/// @notice Factory contract that creates new RicardianTriplerDoubleTokenLeXscroW contracts and records their adoption in the SafeHarborRegistry.
 contract AgreementV1Factory is SignatureValidator {
     /// @notice The SafeHarborRegistry contract.
     SafeHarborRegistry public registry;
@@ -44,10 +44,10 @@ contract AgreementV1Factory is SignatureValidator {
         return "1.0.0";
     }
 
-    /// @notice Function that creates a new AgreementV1 contract and records its adoption in the SafeHarborRegistry.
+    /// @notice Function that creates a new RicardianTriplerDoubleTokenLeXscroW contract and records its adoption in the SafeHarborRegistry.
     /// @param details The details of the agreement.
     function adoptSafeHarbor(AgreementDetailsV1 memory details) external {
-        AgreementV1 agreementDetails = new AgreementV1(details);
+        RicardianTriplerDoubleTokenLeXscroW agreementDetails = new RicardianTriplerDoubleTokenLeXscroW(details);
         registry.recordAdoption(msg.sender, address(agreementDetails));
     }
 
@@ -73,30 +73,30 @@ contract AgreementV1Factory is SignatureValidator {
 
 /// @notice Struct that contains the details of the agreement.
 struct AgreementDetailsV1 {
-    // The names of the parties adopting the agreement.
+    /// @notice The names of the parties adopting the agreement.
     string partyAName;
     string partyBName;
-    // The contact details of each party (required for pre-notifying).
+
+    /// @notice The contact details of each party (required for pre-notifying).
     string contactDetailspartyA;
     string contactDetailspartyB;
-    // The blockchain addresses of each party.
-    string blockchainAddypartyA;
-    string blockchainAddypartyB;
-    // The assets being escrowed by each party.
+
+    /// @notice The blockchain addresses of each party.
+    address payable blockchainAddypartyA;
+    address payable blockchainAddypartyB;
+
+    /// @notice The assets being escrowed by each party.
     LockedAsset lockedAssetPartyA;
     LockedAsset lockedAssetPartyB;
-    // IPFS hash of the agreement (such as an OTC sale agreement) the LeXscroW is servicing.
+
+    /// IPFS hash of the agreement (such as an OTC sale agreement) the LeXscroW is servicing.
     string primaryAgreementURI;
-    // IPFS hash of the official MetaLeX LeXscroW Agreement version being agreed to which confirms all terms.
+
+    /// IPFS hash of the official MetaLeX LeXscroW Agreement version being agreed to which confirms all terms.
     string LeXscroWURI;
 }
 
-
-
 /// @notice Struct that contains the details of a locked asset
 struct LockedAsset {
-    // details to come
+    // You can add more fields as needed, such as assetID, escrowAddress, etc.
 }
-
-
-
