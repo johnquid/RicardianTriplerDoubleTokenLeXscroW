@@ -1,28 +1,25 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import {DoubleTokenLexscrowRegistry} from "./DoubleTokenLexscrowRegistry.sol";
 import "./SignatureValidator.sol";
 
-/// @notice Enum that defines the inclusion of child contracts in an agreement.
-enum ChildContractScope {
-    // No child contracts are included
-    None,
-    // All child contracts, both existing and new, are included
-    All
+interface IDoubleTokenLexscrowRegistry {
+    function recordAdoption(address confirmingParty, address proposingParty, address agreementDetailsAddress) external;
 }
 
-/// @notice Struct that contains the details of an account in an agreement.
+///
+/// STRUCTS
+///
+
+/// @notice the details of an account in an agreement.
 struct Account {
     // The address of the account (EOA or smart contract).
     address accountAddress;
-    // The scope of child contracts included in the agreement.
-    ChildContractScope childContractScope;
     // The signature of the account. Optionally used to verify that this account has accepted this agreement.
     bytes signature;
 }
 
-/// @notice Struct that contains the details of the agreement.
+/// @notice the details of the agreement.
 struct AgreementDetailsV1 {
     /// @notice The details of the parties adopting the agreement.
     Party partyA;
@@ -30,23 +27,17 @@ struct AgreementDetailsV1 {
     /// @notice The assets and amounts being escrowed by each party.
     LockedAsset lockedAssetPartyA;
     LockedAsset lockedAssetPartyB;
-    /// @notice The scope by chain.
-    Chain[] chains;
     /// @notice IPFS hash of the agreement (such as an OTC sale agreement) the LeXscroW is servicing.
     string primaryAgreementURI;
     /// @notice IPFS hash of the official MetaLeX LeXscroW Agreement version being agreed to which confirms all terms.
-    string LexscrowURI;
+    string lexscrowURI;
+    /// @notice governing law for the Agreement
+    string governingLaw;
+    /// @notice dispute resolution elected by the parties
+    string disputeResolutionMethod;
 }
 
-/// @notice Struct that contains the details of an agreement by chain.
-struct Chain {
-    // The accounts in scope for the agreement.
-    Account[] accounts;
-    // The chain ID.
-    uint id;
-}
-
-/// @notice Struct that contains the details of a locked asset
+/// @notice the details of a locked asset
 struct LockedAsset {
     /// @notice token contract address
     address tokenContract;
@@ -54,7 +45,7 @@ struct LockedAsset {
     uint256 totalAmount;
 }
 
-/// @notice Struct that contains a party's details
+/// @notice details of a party: address, name, and contact information
 struct Party {
     /// @notice The blockchain address of the party.
     address partyBlockchainAddy;
@@ -64,9 +55,15 @@ struct Party {
     string contactDetails;
 }
 
+///
+/// CONTRACTS
+///
+
 /// @notice Contract that contains the AgreementDetails that will be deployed by the Agreement Factory.
 contract RicardianTriplerDoubleTokenLexscrow {
-    /// @notice The details of the agreement.
+    uint256 public constant AGREEMENT_VERSION = 1;
+
+    /// @notice The details of the agreement; accessible via `getDetails`
     AgreementDetailsV1 private details;
 
     /// @notice Constructor that sets the details of the agreement.
@@ -76,8 +73,8 @@ contract RicardianTriplerDoubleTokenLexscrow {
     }
 
     /// @notice Function that returns the version of the agreement.
-    function version() external pure returns (string memory) {
-        return "1.0.0";
+    function version() external pure returns (uint256) {
+        return AGREEMENT_VERSION;
     }
 
     /// @notice Function that returns the details of the agreement.
@@ -88,42 +85,74 @@ contract RicardianTriplerDoubleTokenLexscrow {
     }
 }
 
-/// @notice Factory contract that creates new RicardianTriplerDoubleTokenLexscrow contracts and records their adoption in the DoubleTokenLexscrowRegistry.
+/// @notice Factory contract that creates new RicardianTriplerDoubleTokenLexscrow contracts if confirmed properly by both parties
+/// and records their adoption in the DoubleTokenLexscrowRegistry. Either party may propose the agreement adoption, for the other to confirm.
 /// @dev various events emitted in the `registry` contract
 contract AgreementV1Factory is SignatureValidator {
+    uint256 public constant FACTORY_VERSION = 1;
+
     /// @notice The DoubleTokenLexscrowRegistry contract.
-    DoubleTokenLexscrowRegistry public registry;
+    address public registry;
+
+    /// @notice address of proposer of an agreement mapped to the pending agreement address, mapped to the second party address that must confirm adoption
+    mapping(address proposer => mapping(address pendingAgreement => address pendingParty)) public pendingAgreement;
+
+    error RicardianTriplerDoubleTokenLexscrow_NoPendingAgreement();
+    error RicardianTriplerDoubleTokenLexscrow_NotParty();
+
+    /// @notice event that fires if an address party to a DoubleTokenLeXscroW proposes a new RicardianTriplerDoubleTokenLexscrow contract
+    event RicardianTriplerDoubleTokenLexscrow_Proposed(address proposer, address pendingAgreementAddress);
 
     /// @notice Constructor that sets the DoubleTokenLexscrowRegistry address.
+    /// @dev no access control necessary as valid factories are set by the `admin` in the `registry` contract
     /// @param registryAddress The address of the DoubleTokenLexscrowRegistry contract.
     constructor(address registryAddress) {
-        registry = DoubleTokenLexscrowRegistry(registryAddress);
+        registry = registryAddress;
     }
 
-    /// @notice Function that returns the version of the agreement factory.
-    function version() external pure returns (string memory) {
-        return "1.0.0";
-    }
-
-    /// @notice Function that creates a new RicardianTriplerDoubleTokenLexscrow contract and records its adoption in the DoubleTokenLexscrowRegistry.
-    /// @param details The details of the agreement.
-    function adoptDoubleTokenLexscrowAgreement(AgreementDetailsV1 memory details) external {
+    /// @notice for a party to a DoubleTokenLeXscroW to propose a new RicardianTriplerDoubleTokenLexscrow contract, which will be adopted if confirmed by the
+    /// other party to the DoubleTokenLeXscroW.
+    /// @param details The details of the proposed agreement.
+    function proposeDoubleTokenLexscrowAgreement(AgreementDetailsV1 memory details) external {
         RicardianTriplerDoubleTokenLexscrow agreementDetails = new RicardianTriplerDoubleTokenLexscrow(details);
-        registry.recordAdoption(msg.sender, address(agreementDetails));
+        address _agreementAddress = address(agreementDetails);
+
+        // if msg.sender is partyA, nested map it to the pending agreement to the address that needs to confirm adoption, and vice versa if partyB; else, revert
+        if (msg.sender == details.partyA.partyBlockchainAddy)
+            pendingAgreement[msg.sender][_agreementAddress] = details.partyB.partyBlockchainAddy;
+        else if (msg.sender == details.partyB.partyBlockchainAddy)
+            pendingAgreement[msg.sender][_agreementAddress] = details.partyA.partyBlockchainAddy;
+        else revert RicardianTriplerDoubleTokenLexscrow_NotParty();
+
+        emit RicardianTriplerDoubleTokenLexscrow_Proposed(msg.sender, _agreementAddress);
     }
 
-    function validateAccount(AgreementDetailsV1 memory details, Account memory account) external view returns (bool) {
-        // Iterate over all accounts, setting signature fields to zero.
-        for (uint i = 0; i < details.chains.length; i++) {
-            for (uint j = 0; j < details.chains[i].accounts.length; j++) {
-                details.chains[i].accounts[j].signature = new bytes(0);
-            }
-        }
+    /// @notice creates a new RicardianTriplerDoubleTokenLexscrow contract and records its adoption in the DoubleTokenLexscrowRegistry if called by the second party to `details`;
+    /// i.e. the party address that did not initiate the adoption by calling `proposeDoubleTokenLexscrowAgreement`
+    /// @param pendingAgreementAddress the address of the pending agreement being confirmed
+    /// @param proposingParty the address of the party that initially proposed the pending Agreement
+    function confirmAndAdoptDoubleTokenLexscrowAgreement(
+        address pendingAgreementAddress,
+        address proposingParty
+    ) external {
+        if (pendingAgreement[proposingParty][pendingAgreementAddress] != msg.sender)
+            revert RicardianTriplerDoubleTokenLexscrow_NoPendingAgreement();
 
-        // Hash the details.
+        delete pendingAgreement[proposingParty][pendingAgreementAddress];
+
+        IDoubleTokenLexscrowRegistry(registry).recordAdoption(msg.sender, proposingParty, pendingAgreementAddress);
+    }
+
+    /// @notice validate that an `account` has signed the hashed agreement details
+    function validateAccount(AgreementDetailsV1 memory details, Account memory account) external view returns (bool) {
         bytes32 hash = keccak256(abi.encode(details));
 
         // Verify that the account's accountAddress signed the hashed details.
         return isSignatureValid(account.accountAddress, hash, account.signature);
+    }
+
+    /// @notice Function that returns the version of the agreement factory.
+    function version() external pure returns (uint256) {
+        return FACTORY_VERSION;
     }
 }
