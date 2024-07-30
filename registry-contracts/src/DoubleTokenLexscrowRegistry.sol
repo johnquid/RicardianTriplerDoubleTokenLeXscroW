@@ -7,9 +7,11 @@ pragma solidity ^0.8.18;
 contract DoubleTokenLexscrowRegistry {
     /// @notice admin address used to enable or disable factories.
     address public admin;
+    /// @notice pending new admin address
+    address public _pendingAdmin;
 
     /// @notice maps an address to a counter in order to support multiple adopted agreements by one address
-    mapping(address => uint256) public nonce;
+    mapping(address => uint256) private nonce;
 
     /// @notice maps an address to their index of adopted agreements to the agreement details for the applicable index
     mapping(address adopter => mapping(uint256 index => address details)) public agreements;
@@ -41,10 +43,11 @@ contract DoubleTokenLexscrowRegistry {
     ///
 
     error DoubleTokenLexscrowRegistry_OnlyAdmin();
+    error DoubleTokenLexscrowFactory_OnlyPendingAdmin();
     error DoubleTokenLexscrowRegistry_OnlyFactories();
     error DoubleTokenLexscrowRegistry_ZeroAddress();
 
-    /// @notice Modifier to restrict access to admin-only functions.
+    /// @notice restrict access to admin-only functions.
     modifier onlyAdmin() {
         if (msg.sender != admin) revert DoubleTokenLexscrowRegistry_OnlyAdmin();
         _;
@@ -85,16 +88,26 @@ contract DoubleTokenLexscrowRegistry {
     /// @notice Disables an address as an factory.
     /// @param factory The address to disable.
     function disableFactory(address factory) external onlyAdmin {
-        agreementFactories[factory] = false;
+        delete agreementFactories[factory];
         emit DoubleTokenLexscrowRegistry_FactoryDisabled(factory);
     }
 
-    /// @notice Allows the admin to transfer admin rights to another address.
-    /// @param newAdmin The address of the new admin.
-    function transferAdminRights(address newAdmin) external onlyAdmin {
-        if (newAdmin == address(0)) revert DoubleTokenLexscrowRegistry_ZeroAddress();
-        admin = newAdmin;
+    /// @notice allows the `admin` to propose a replacement to their address. First step in two-step address change, as `_newAdmin` will subsequently need to call `acceptAdminRole()`
+    /// @dev use care in updating `admin` as it must have the ability to call `acceptAdminRole()`, or once it needs to be replaced, `updateAdmin()`
+    /// @param _newAdmin new address for pending `admin`, who must accept the role by calling `acceptAdminRole`
+    function updateAdmin(address _newAdmin) external onlyAdmin {
+        if (_newAdmin == address(0)) revert DoubleTokenLexscrowRegistry_ZeroAddress();
 
-        emit DoubleTokenLexscrowRegistry_AdminUpdated(newAdmin);
+        _pendingAdmin = _newAdmin;
+    }
+
+    /// @notice allows the pending new admin to accept the role transfer, and receive fees
+    /// @dev access restricted to the address stored as `_pendingAdmin` to accept the two-step change. Transfers `admin` role to the caller and deletes `_pendingAdmin` to reset.
+    function acceptAdminRole() external {
+        address _sender = msg.sender;
+        if (_sender != _pendingAdmin) revert DoubleTokenLexscrowFactory_OnlyPendingAdmin();
+        delete _pendingAdmin;
+        admin = _sender;
+        emit DoubleTokenLexscrowRegistry_AdminUpdated(admin);
     }
 }
