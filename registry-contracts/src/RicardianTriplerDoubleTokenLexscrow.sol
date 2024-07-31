@@ -27,10 +27,8 @@ struct AgreementDetailsV1 {
     /// @notice The assets and amounts being escrowed by each party.
     LockedAsset lockedAssetPartyA;
     LockedAsset lockedAssetPartyB;
-    /// @notice IPFS hash of the agreement (such as an OTC sale agreement) the LeXscroW is servicing.
-    string primaryAgreementURI;
     /// @notice IPFS hash of the official MetaLeX LeXscroW Agreement version being agreed to which confirms all terms.
-    string lexscrowURI;
+    string legalAgreementURI;
     /// @notice governing law for the Agreement
     string governingLaw;
     /// @notice dispute resolution elected by the parties
@@ -61,10 +59,10 @@ struct Party {
 
 /// @notice Contract that contains the AgreementDetails that will be deployed by the Agreement Factory.
 contract RicardianTriplerDoubleTokenLexscrow {
-    uint256 public constant AGREEMENT_VERSION = 1;
+    uint256 internal constant AGREEMENT_VERSION = 1;
 
     /// @notice The details of the agreement; accessible via `getDetails`
-    AgreementDetailsV1 private details;
+    AgreementDetailsV1 internal details;
 
     /// @notice Constructor that sets the details of the agreement.
     /// @param _details The details of the agreement.
@@ -78,7 +76,7 @@ contract RicardianTriplerDoubleTokenLexscrow {
     }
 
     /// @notice Function that returns the details of the agreement.
-    /// @dev You need a view function, else it won't convert storage to memory automatically for the nested structs.
+    /// @dev view function necessary to convert storage to memory automatically for the nested structs.
     /// @return `AgreementDetailsV1` struct containing the details of the agreement.
     function getDetails() external view returns (AgreementDetailsV1 memory) {
         return details;
@@ -89,7 +87,7 @@ contract RicardianTriplerDoubleTokenLexscrow {
 /// and records their adoption in the DoubleTokenLexscrowRegistry. Either party may propose the agreement adoption, for the other to confirm.
 /// @dev various events emitted in the `registry` contract
 contract AgreementV1Factory is SignatureValidator {
-    uint256 public constant FACTORY_VERSION = 1;
+    uint256 internal constant FACTORY_VERSION = 1;
 
     /// @notice The DoubleTokenLexscrowRegistry contract.
     address public registry;
@@ -112,7 +110,7 @@ contract AgreementV1Factory is SignatureValidator {
 
     /// @notice for a party to a DoubleTokenLeXscroW to propose a new RicardianTriplerDoubleTokenLexscrow contract, which will be adopted if confirmed by the
     /// other party to the DoubleTokenLeXscroW.
-    /// @param details The details of the proposed agreement.
+    /// @param details The details of the proposed agreement, as an `AgreementDetailsV1` struct
     function proposeDoubleTokenLexscrowAgreement(AgreementDetailsV1 memory details) external {
         RicardianTriplerDoubleTokenLexscrow agreementDetails = new RicardianTriplerDoubleTokenLexscrow(details);
         address _agreementAddress = address(agreementDetails);
@@ -144,6 +142,8 @@ contract AgreementV1Factory is SignatureValidator {
     }
 
     /// @notice validate that an `account` has signed the hashed agreement details
+    /// @param details `AgreementDetailsV1` struct of the agreement details to which `account` is being validated as signed
+    /// @param account `Account` struct of the account which is being validated as having signed `details`
     function validateAccount(AgreementDetailsV1 memory details, Account memory account) external view returns (bool) {
         bytes32 hash = keccak256(abi.encode(details));
 
