@@ -111,7 +111,8 @@ contract AgreementV1Factory is SignatureValidator {
     /// @notice for a party to a DoubleTokenLeXscroW to propose a new RicardianTriplerDoubleTokenLexscrow contract, which will be adopted if confirmed by the
     /// other party to the DoubleTokenLeXscroW.
     /// @param details The details of the proposed agreement, as an `AgreementDetailsV1` struct
-    function proposeDoubleTokenLexscrowAgreement(AgreementDetailsV1 memory details) external {
+    /// @return _agreementAddress address of the pending `RicardianTriplerDoubleTokenLexscrow` agreement
+    function proposeDoubleTokenLexscrowAgreement(AgreementDetailsV1 memory details) external returns (address) {
         RicardianTriplerDoubleTokenLexscrow agreementDetails = new RicardianTriplerDoubleTokenLexscrow(details);
         address _agreementAddress = address(agreementDetails);
 
@@ -123,6 +124,7 @@ contract AgreementV1Factory is SignatureValidator {
         else revert RicardianTriplerDoubleTokenLexscrow_NotParty();
 
         emit RicardianTriplerDoubleTokenLexscrow_Proposed(msg.sender, _agreementAddress);
+        return (_agreementAddress);
     }
 
     /// @notice creates a new RicardianTriplerDoubleTokenLexscrow contract and records its adoption in the DoubleTokenLexscrowRegistry if called by the second party to `details`;
