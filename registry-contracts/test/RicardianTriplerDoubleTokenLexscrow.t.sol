@@ -5,8 +5,8 @@ pragma solidity ^0.8.18;
 import {Test} from "forge-std/Test.sol";
 import {console} from "forge-std/console.sol";
 import {Vm} from "forge-std/Vm.sol";
-import "../temp/DoubleTokenLexscrowRegistry.sol";
-import "../temp/RicardianTriplerDoubleTokenLexscrow.sol";
+import "../src/DoubleTokenLexscrowRegistry.sol";
+import "../src/RicardianTriplerDoubleTokenLexscrow.sol";
 
 contract RicardianTriplerDoubleTokenLexscrowTest is Test {
     DoubleTokenLexscrowRegistry registry;
