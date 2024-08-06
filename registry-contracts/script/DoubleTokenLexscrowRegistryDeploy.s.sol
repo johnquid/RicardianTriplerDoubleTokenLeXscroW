@@ -3,10 +3,10 @@ pragma solidity ^0.8.13;
 
 import {Script} from "forge-std/Script.sol";
 import {console} from "forge-std/console.sol";
-import {SafeHarborRegistry} from "../src/SafeHarborRegistry.sol";
-import {AgreementV1Factory} from "../src/AgreementV1.sol";
+import {DoubleTokenLexscrowRegistry} from "../src/DoubleTokenLexscrowRegistry.sol";
+import {AgreementV1Factory} from "../src/RicardianTriplerDoubleTokenLexscrow.sol";
 
-contract SafeHarborRegistryDeploy is Script {
+contract DoubleTokenLexscrowRegistryDeploy is Script {
     // This is a create2 factory deployed by a one-time-use-account as described here:
     // https://github.com/Arachnid/deterministic-deployment-proxy. As a result, this factory
     // exists (or can exist) on any EVM compatible chain, and gives us a guaranteed way to deploy
@@ -35,7 +35,7 @@ contract SafeHarborRegistryDeploy is Script {
         );
 
         vm.startBroadcast(deployerPrivateKey);
-        SafeHarborRegistry registry = new SafeHarborRegistry{
+        DoubleTokenLexscrowRegistry registry = new DoubleTokenLexscrowRegistry{
             salt: DETERMINISTIC_DEPLOY_SALT
         }(deployerAddress);
         address deployedRegistry = address(registry);
@@ -67,7 +67,7 @@ contract SafeHarborRegistryDeploy is Script {
                                 DETERMINISTIC_DEPLOY_SALT,
                                 keccak256(
                                     abi.encodePacked(
-                                        type(SafeHarborRegistry).creationCode,
+                                        type(DoubleTokenLexscrowRegistry).creationCode,
                                         abi.encode(admin)
                                     )
                                 )
