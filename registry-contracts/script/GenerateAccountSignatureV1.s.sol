@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import {console} from "forge-std/console.sol";
 import {ScriptBase} from "forge-std/Base.sol";
-import {AgreementDetailsV1, Chain, Account, BountyTerms, ChildContractScope, IdentityVerification} from "../src/AgreementV1.sol";
+import {AgreementDetailsV1, Account, LockedAsset, Party} from "../src/RicardianTriplerDoubleTokenLexscrow.sol";
 
 // This function generates an account signature for EOAs. For ERC-1271 contracts
 // the method of signature generation may vary from contract to contract. Ensure
@@ -13,13 +13,6 @@ contract GenerateAccountSignatureV1 is ScriptBase {
     function run() external view {
         uint256 signerPrivateKey = vm.envUint("SIGNER_PRIVATE_KEY");
         AgreementDetailsV1 memory details = getAgreementDetails();
-
-        // Empty signature field for hashing
-        for (uint i = 0; i < details.chains.length; i++) {
-            for (uint j = 0; j < details.chains[i].accounts.length; j++) {
-                details.chains[i].accounts[j].signature = new bytes(0);
-            }
-        }
 
         // Generate the signature
         bytes32 hash = keccak256(abi.encode(details));
@@ -32,40 +25,34 @@ contract GenerateAccountSignatureV1 is ScriptBase {
         console.logBytes(signature);
     }
 
-    function getAgreementDetails()
-        internal
-        pure
-        returns (AgreementDetailsV1 memory details)
-    {
+    /// @notice replace example with pertinent details
+    function getAgreementDetails() internal pure returns (AgreementDetailsV1 memory details) {
         Account memory account = Account({
             accountAddress: address(0xeaA33ea82591611Ac749b875aBD80a465219ab40),
-            childContractScope: ChildContractScope.All,
             signature: new bytes(0)
         });
 
-        Chain memory chain = Chain({
-            accounts: new Account[](1),
-            assetRecoveryAddress: address(
-                0xa30F2797Bf542ECe99290cf4E4C6546cc349B9A1
-            ),
-            id: 1
+        Party memory _partyA = Party({
+            partyBlockchainAddy: address(1),
+            partyName: "Party A",
+            contactDetails: "partyA@email.com"
         });
-        chain.accounts[0] = account;
-
-        BountyTerms memory bountyTerms = BountyTerms({
-            bountyPercentage: 10,
-            bountyCapUSD: 100,
-            verification: IdentityVerification.Retainable
+        Party memory _partyB = Party({
+            partyBlockchainAddy: address(2),
+            partyName: "Party B",
+            contactDetails: "partyB@email.com"
         });
+        LockedAsset memory _lockedAssetPartyA = LockedAsset({tokenContract: address(3), totalAmount: 999999999999});
 
         details = AgreementDetailsV1({
-            protocolName: "testProtocol",
-            chains: new Chain[](1),
-            contactDetails: "Test contact information",
-            bountyTerms: bountyTerms,
-            agreementURI: "ipfs://testHash"
+            partyA: _partyA,
+            partyB: _partyB,
+            lockedAssetPartyA: _lockedAssetPartyA,
+            lockedAssetPartyB: _lockedAssetPartyB,
+            legalAgreementURI: "ipfs://testHash",
+            governingLaw: "MetaLaW",
+            disputeResolutionMethod: "coin flip"
         });
-        details.chains[0] = chain;
 
         return details;
     }
