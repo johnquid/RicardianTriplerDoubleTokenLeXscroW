@@ -55,10 +55,12 @@ contract RicardianTriplerDoubleTokenLexscrowTest is Test {
         ++firstPartyNonce;
         vm.prank(firstParty);
         address _newAgreement = factory.proposeDoubleTokenLexscrowAgreement(details);
+        bytes32 _pendingHash = keccak256(abi.encode(details, _newAgreement));
         assertEq(factory.pendingAgreement(firstParty, _newAgreement), secondParty, "secondParty should be pending");
+        assertTrue(factory.pendingAgreementHash(_pendingHash), "_pendingHash should be mapped to true");
 
         vm.prank(secondParty);
-        factory.confirmAndAdoptDoubleTokenLexscrowAgreement(_newAgreement, firstParty);
+        factory.confirmAndAdoptDoubleTokenLexscrowAgreement(_newAgreement, firstParty, _pendingHash);
 
         assertEq(registry.agreements(firstParty, firstPartyNonce), _newAgreement, "agreement address does not match");
 
@@ -74,15 +76,21 @@ contract RicardianTriplerDoubleTokenLexscrowTest is Test {
         ++firstPartyNonce;
         vm.prank(firstParty);
         address _newAgreement = factory.proposeDoubleTokenLexscrowAgreement(details);
+        bytes32 _pendingHash = keccak256(abi.encode(details, _newAgreement));
         assertEq(factory.pendingAgreement(firstParty, _newAgreement), secondParty, "secondParty should be pending");
+        assertTrue(factory.pendingAgreementHash(_pendingHash), "_pendingHash should be mapped to true");
 
         vm.prank(_randomAddr);
         if (_randomAddr != secondParty) {
             vm.expectRevert();
-            factory.confirmAndAdoptDoubleTokenLexscrowAgreement(_newAgreement, firstParty);
+            factory.confirmAndAdoptDoubleTokenLexscrowAgreement(_newAgreement, firstParty, _pendingHash);
 
             // 'secondParty' should still be pending
             assertEq(secondParty, factory.pendingAgreement(firstParty, _newAgreement), "second party not pending");
+            assertTrue(
+                factory.pendingAgreementHash(_pendingHash),
+                "_pendingHash should be mapped to true as still pending"
+            );
         }
     }
 
