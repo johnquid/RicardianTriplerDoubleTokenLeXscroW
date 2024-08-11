@@ -95,7 +95,7 @@ contract AgreementV1Factory is SignatureValidator {
     /// @notice address of proposer of an agreement mapped to the pending agreement address, mapped to the second party address that must confirm adoption
     mapping(address proposer => mapping(address pendingAgreement => address pendingParty)) public pendingAgreement;
 
-    /// @notice hashed agreement details + agreement contract address mapped to whether they match a pending agreement
+    /// @notice hashed agreement details mapped to whether they match a pending agreement
     mapping(bytes32 => bool) public pendingAgreementHash;
 
     error RicardianTriplerDoubleTokenLexscrow_NoPendingAgreement();
@@ -126,7 +126,7 @@ contract AgreementV1Factory is SignatureValidator {
             pendingAgreement[msg.sender][_agreementAddress] = details.partyA.partyBlockchainAddy;
         else revert RicardianTriplerDoubleTokenLexscrow_NotParty();
 
-        pendingAgreementHash[keccak256(abi.encode(details, _agreementAddress))] = true;
+        pendingAgreementHash[keccak256(abi.encode(details))] = true;
 
         emit RicardianTriplerDoubleTokenLexscrow_Proposed(msg.sender, _agreementAddress);
         return (_agreementAddress);
@@ -136,12 +136,13 @@ contract AgreementV1Factory is SignatureValidator {
     /// i.e. the party address that did not initiate the adoption by calling `proposeDoubleTokenLexscrowAgreement`
     /// @param pendingAgreementAddress the address of the pending agreement being confirmed
     /// @param proposingParty the address of the party that initially proposed the pending Agreement
-    /// @param pendingHash bytes32 hash of the pending AgreementDetailsV1 and the `pendingAgreementAddress`
+    /// @param details `AgreementDetailsV1` struct of the agreement details which will be hashed to ensure same parameters as the proposed agreement
     function confirmAndAdoptDoubleTokenLexscrowAgreement(
         address pendingAgreementAddress,
         address proposingParty,
-        bytes32 pendingHash
+        AgreementDetailsV1 memory details
     ) external {
+        bytes32 pendingHash = keccak256(abi.encode(details));
         if (
             pendingAgreement[proposingParty][pendingAgreementAddress] != msg.sender ||
             !pendingAgreementHash[pendingHash]
