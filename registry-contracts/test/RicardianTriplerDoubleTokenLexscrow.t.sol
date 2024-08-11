@@ -54,15 +54,32 @@ contract RicardianTriplerDoubleTokenLexscrowTest is Test {
     function testProposeAndConfirmDoubleTokenLexscrowAgreement() public {
         ++firstPartyNonce;
         vm.prank(firstParty);
-        address _newAgreement = factory.proposeDoubleTokenLexscrowAgreement(details);
-        bytes32 _pendingHash = keccak256(abi.encode(details, _newAgreement));
-        assertEq(factory.pendingAgreement(firstParty, _newAgreement), secondParty, "secondParty should be pending");
-        assertTrue(factory.pendingAgreementHash(_pendingHash), "_pendingHash should be mapped to true");
+        address _newAgreement = factory.proposeDoubleTokenLexscrowAgreement(
+            details
+        );
+        bytes32 _pendingHash = keccak256(abi.encode(details));
+        assertEq(
+            factory.pendingAgreement(firstParty, _newAgreement),
+            secondParty,
+            "secondParty should be pending"
+        );
+        assertTrue(
+            factory.pendingAgreementHash(_pendingHash),
+            "_pendingHash should be mapped to true"
+        );
 
         vm.prank(secondParty);
-        factory.confirmAndAdoptDoubleTokenLexscrowAgreement(_newAgreement, firstParty, _pendingHash);
+        factory.confirmAndAdoptDoubleTokenLexscrowAgreement(
+            _newAgreement,
+            firstParty,
+            details
+        );
 
-        assertEq(registry.agreements(firstParty, firstPartyNonce), _newAgreement, "agreement address does not match");
+        assertEq(
+            registry.agreements(firstParty, firstPartyNonce),
+            _newAgreement,
+            "agreement address does not match"
+        );
 
         // if successful, this mapping should be deleted
         assertEq(
@@ -72,21 +89,40 @@ contract RicardianTriplerDoubleTokenLexscrowTest is Test {
         );
     }
 
-    function testProposeAndConfirmDoubleTokenLexscrowAgreement_invalid(address _randomAddr) public {
+    function testProposeAndConfirmDoubleTokenLexscrowAgreement_invalid(
+        address _randomAddr
+    ) public {
         ++firstPartyNonce;
         vm.prank(firstParty);
-        address _newAgreement = factory.proposeDoubleTokenLexscrowAgreement(details);
-        bytes32 _pendingHash = keccak256(abi.encode(details, _newAgreement));
-        assertEq(factory.pendingAgreement(firstParty, _newAgreement), secondParty, "secondParty should be pending");
-        assertTrue(factory.pendingAgreementHash(_pendingHash), "_pendingHash should be mapped to true");
+        address _newAgreement = factory.proposeDoubleTokenLexscrowAgreement(
+            details
+        );
+        bytes32 _pendingHash = keccak256(abi.encode(details));
+        assertEq(
+            factory.pendingAgreement(firstParty, _newAgreement),
+            secondParty,
+            "secondParty should be pending"
+        );
+        assertTrue(
+            factory.pendingAgreementHash(_pendingHash),
+            "_pendingHash should be mapped to true"
+        );
 
         vm.prank(_randomAddr);
         if (_randomAddr != secondParty) {
             vm.expectRevert();
-            factory.confirmAndAdoptDoubleTokenLexscrowAgreement(_newAgreement, firstParty, _pendingHash);
+            factory.confirmAndAdoptDoubleTokenLexscrowAgreement(
+                _newAgreement,
+                firstParty,
+                details
+            );
 
             // 'secondParty' should still be pending
-            assertEq(secondParty, factory.pendingAgreement(firstParty, _newAgreement), "second party not pending");
+            assertEq(
+                secondParty,
+                factory.pendingAgreement(firstParty, _newAgreement),
+                "second party not pending"
+            );
             assertTrue(
                 factory.pendingAgreementHash(_pendingHash),
                 "_pendingHash should be mapped to true as still pending"
