@@ -11,23 +11,23 @@ interface IDoubleTokenLexscrowRegistry {
 /// STRUCTS
 ///
 
-/// @notice the details of an account in an agreement.
+/// @notice the details of an account in an agreement
 struct Account {
-    // The address of the account (EOA or smart contract).
+    // The address of the account (EOA or smart contract)
     address accountAddress;
-    // The signature of the account. Optionally used to verify that this account has accepted this agreement.
+    // The signature of the account. Optionally used to verify that this account has signed hashed agreement details
     bytes signature;
 }
 
 /// @notice the details of the agreement.
 struct AgreementDetailsV1 {
-    /// @notice The details of the parties adopting the agreement.
+    /// @notice The details of the parties adopting the agreement
     Party partyA;
     Party partyB;
-    /// @notice The assets and amounts being escrowed by each party.
+    /// @notice The assets and amounts being escrowed by each party
     LockedAsset lockedAssetPartyA;
     LockedAsset lockedAssetPartyB;
-    /// @notice IPFS hash of the official MetaLeX LeXscroW Agreement version being agreed to which confirms all terms.
+    /// @notice IPFS hash of the official MetaLeX LeXscroW Agreement version being agreed to which confirms all terms, and may contain a unique interface identifier
     string legalAgreementURI;
     /// @notice governing law for the Agreement
     string governingLaw;
@@ -45,11 +45,11 @@ struct LockedAsset {
 
 /// @notice details of a party: address, name, and contact information
 struct Party {
-    /// @notice The blockchain address of the party.
+    /// @notice The blockchain address of the party
     address partyBlockchainAddy;
-    /// @notice The name of the party adopting the agreement.
+    /// @notice The name of the party adopting the agreement
     string partyName;
-    /// @notice The contact details of the party (required for pre-notifying).
+    /// @notice The contact details of the party (required for pre-notifying)
     string contactDetails;
 }
 
