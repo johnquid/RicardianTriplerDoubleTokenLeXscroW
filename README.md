@@ -30,7 +30,7 @@ Once the specifics are determined, there are three final steps for adoption:
 
 1.  A party to a Double Token LeXscroW calls `proposeDoubleTokenLexscrowAgreement()` on an `AgreementFactory` with their agreement details.
 2.  The factory creates an `Agreement` contract containing the provided agreement details.
-3.  The other party to the applicable Double Token LeXscroW calls `confirmAndAdoptDoubleTokenLexscrowAgreement()` with the pending agreement's contract address and the address of initial proposing party to confirm adoption.
+3.  The other party to the applicable Double Token LeXscroW calls `confirmAndAdoptDoubleTokenLexscrowAgreement()` with the pending agreement's details, contract address, and the address of initial proposing party to confirm adoption.
 4.  The factory adds the `Agreement` contract address to the `DoubleTokenLexscrowRegistry`.
   
 Each party's onchain transaction to propose and confirm (as applicable) the agreement details constitutes legally binding action, so each address calling the registry should represent the decision-making authority of the applicable party to the Double Token LeXscroW.
