@@ -49,7 +49,7 @@ struct Party {
     address partyBlockchainAddy;
     /// @notice The name of the party adopting the agreement
     string partyName;
-    /// @notice The contact details of the party (required for pre-notifying)
+    /// @notice The contact details of the party (required for legal notifications under the agreement)
     string contactDetails;
 }
 
