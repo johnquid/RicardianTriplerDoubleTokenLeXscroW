@@ -1,6 +1,6 @@
 # Double Token LeXscroW Registry
 
-This directory houses the "Double Token LeXscroW Registry". This is a smart contract written in Solidity which serves three main purposes:
+This directory houses smart contracts written in Solidity which serve three main purposes:
 
 1. Allow parties to a Double Token LeXscroW to officially adopt the form agreement with their chosen governing law and dispute resolution.
 2. Store the agreement details on-chain for ease-of-use and persistent credibly neutral storage.
@@ -10,11 +10,12 @@ This directory houses the "Double Token LeXscroW Registry". This is a smart cont
 
 This repository is built using [Foundry](https://book.getfoundry.sh/). See the installation instructions [here](https://github.com/foundry-rs/foundry#installation). To test the contracts, use `forge test`.
 
-There are 3 contracts in this system:
+Contracts in this system:
 
 -   `DoubleTokenLexscrowRegistry` - Where adopted agreement addresses are stored, new agreements are registered, and agreement factories are enabled / disabled.
 -   `AgreementV1Factory` within `RicardianTriplerDoubleTokenLexscrow` - Where parties adopt new agreement contracts.
--   `AgreementV1` - Adopted agreements proposed by a party and confirmed by the other party to a Double Token LeXscroW.
+-   `RicardianTriplerDoubleTokenLexscrow` - Adopted agreements proposed by a party and confirmed by the other party to a Double Token LeXscroW.
+-   `SignatureValidator` - Used to determine whether a hash was validly signed by an address
 
 ## Setup
 
@@ -26,12 +27,12 @@ In the future MetaLeX may create new versions of this agreement. When this happe
 
 ## Adoption
 
-1.  A party to a Double Token LeXscroW calls `proposeDoubleTokenLexscrowAgreement()` on an `AgreementFactory` with their agreement details.
-2.  The factory creates an `Agreement` contract containing the provided agreement details.
-3.  The other party to the applicable Double Token LeXscroW calls `confirmAndAdoptDoubleTokenLexscrowAgreement()` with the pending agreement's contract address and the address of initial proposing party to confirm adoption.
-4.  The factory adds the `Agreement` contract address to the `DoubleTokenLexscrowRegistry`.
+1.  A party to a Double Token LeXscroW calls `proposeDoubleTokenLexscrowAgreement()` on an `AgreementFactory` with their `AgreementDetails`. To deploy a Double Token LeXscroW and propose an agreement simultaneously, a party calls `deployLexscrowAndProposeDoubleTokenLexscrowAgreement()` with the same parameters included in the passed `AgreementDetails` and the applicable contract address of the `DoubleTokenLexscrowFactory` which will be used to deploy the Double Token LeXscroW.
+2.  The factory creates an `RicardianTriplerDoubleTokenLexscrow` contract containing the provided agreement details.
+3.  The other party to the applicable Double Token LeXscroW calls `confirmAndAdoptDoubleTokenLexscrowAgreement()` with identical `AgreementDetails`, the pending agreement's contract address, and the address of initial proposing party to confirm adoption.
+4.  The factory adds the `RicardianTriplerDoubleTokenLexscrow` contract address to the `DoubleTokenLexscrowRegistry`.
 
-Calling `confirmAndAdoptDoubleTokenLexscrowAgreement()` is considered the legally binding action in the agreement, binding the two parties to the agreement.
+Calling `confirmAndAdoptDoubleTokenLexscrowAgreement()` operates as a legally binding countersignature to the agreement, binding the two parties to the agreement.
 
 ### Signed Accounts
 
@@ -51,10 +52,10 @@ Parties may use the agreement factory's `validateAccount()` method to verify tha
 
 ## Querying Agreements
 
-1. Query the `agreements` nested mapping in the `DoubleTokenLexscrowRegistry` contract (via the getter) a party's address and their index to get the protocol's `AgreementV1` address. This information is also emitted in the `DoubleTokenLexscrowRegistry_DoubleTokenLexscrowAdoption` event when `recordAdoption()` is called.
-2. Query the `Agreement` contract with `getDetails()` to get the structured agreement details.
+1. Query the `agreements` nested mapping in the `DoubleTokenLexscrowRegistry` contract (via the getter) a party's address and their index to get the protocol's `RicardianTriplerDoubleTokenLexscrow` address. This information is also emitted in the `DoubleTokenLexscrowRegistry_DoubleTokenLexscrowAdoption` event when `recordAdoption()` is called. To check if a `RicardianTriplerDoubleTokenLexscrow` was properly signed and recorded, a user may pass its address to the `signedAgreement` mapping in the `DoubleTokenLexscrowRegistry`; if it returns `true`, it was mutually signed and recorded.
+2. Query the `RicardianTriplerDoubleTokenLexscrow` contract with `getDetails()` to get the structured agreement details.
 
-Different versions may have different `AgreementDetails` structs. All `Agreement` and `AgreementFactory` contracts will include a `version()` method that can be used to infer the `AgreementDetails` structure.
+Different versions may have different `AgreementDetails` structs. All `RicardianTriplerDoubleTokenLexscrow` and `AgreementFactory` contracts will include a `version()` method that can be used to infer the `AgreementDetails` structure.
 
 # Deployment
 
