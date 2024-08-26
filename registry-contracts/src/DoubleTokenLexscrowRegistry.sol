@@ -10,14 +10,19 @@ contract DoubleTokenLexscrowRegistry {
     /// @notice pending new admin address
     address public _pendingAdmin;
 
+    /// @notice A mapping which records the approved agreement factories.
+    mapping(address factory => bool) public agreementFactories;
+
+    /// @notice maps an address to whether it is a confirmed and adopted agreement;
+    /// if true, user may call `getDetails()` on such address to easily view the details
+    /// @dev enables public getter function to check an agreement address more easily than via the nested `agreements` mapping
+    mapping(address => bool) public signedAgreement;
+
     /// @notice maps an address to a counter in order to support multiple adopted agreements by one address
     mapping(address => uint256) private nonce;
 
     /// @notice maps an address to their index of adopted agreements to the agreement details for the applicable index
     mapping(address adopter => mapping(uint256 index => address details)) public agreements;
-
-    /// @notice A mapping which records the approved agreement factories.
-    mapping(address factory => bool) public agreementFactories;
 
     ///
     /// EVENTS
@@ -59,15 +64,16 @@ contract DoubleTokenLexscrowRegistry {
     }
 
     /// @notice Officially adopt the agreement, or modify its terms if already adopted. Only callable by approved factories.
-    /// @dev updates mappings for each party to the agreement
+    /// @dev updates mappings for each party to the agreement and records the agreement address as a `signedAgreement`
     /// @param confirmingParty address that confirmed agreement adoption
-    /// @param proposingParty address that proposed the agreement i, subsequently confirmed as adopted by `confirmingParty`
+    /// @param proposingParty address that proposed the agreement, subsequently confirmed as adopted by `confirmingParty`
     /// @param agreementDetailsAddress The new details of the agreement.
     function recordAdoption(address confirmingParty, address proposingParty, address agreementDetailsAddress) external {
         if (!agreementFactories[msg.sender]) revert DoubleTokenLexscrowRegistry_OnlyFactories();
         uint256 _confirmingPartyNonce = ++nonce[confirmingParty];
         uint256 _proposingPartyNonce = ++nonce[proposingParty];
 
+        signedAgreement[agreementDetailsAddress] = true;
         agreements[confirmingParty][_confirmingPartyNonce] = agreementDetailsAddress;
         agreements[proposingParty][_proposingPartyNonce] = agreementDetailsAddress;
 
