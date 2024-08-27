@@ -1,17 +1,26 @@
 // SPDX-License-Identifier: UNLICENSED
+
 pragma solidity ^0.8.18;
 
-/// @notice Imporing these packages directly due to naming conflicts between "Account" and "Chain" structs.
 import {Test} from "forge-std/Test.sol";
 import {console} from "forge-std/console.sol";
 import {Vm} from "forge-std/Vm.sol";
 import "../src/DoubleTokenLexscrowRegistry.sol";
 import "../src/RicardianTriplerDoubleTokenLexscrow.sol";
 
+/// @dev forge t --via-ir
 contract RicardianTriplerDoubleTokenLexscrowTest is Test {
     DoubleTokenLexscrowRegistry registry;
     AgreementV1Factory factory;
-    AgreementDetailsV1 details;
+    Party _partyA;
+    Party _partyB;
+    LockedAsset _lockedAssetPartyA;
+    LockedAsset _lockedAssetPartyB;
+
+    Condition[] internal emptyConditions;
+
+    address _zero = address(0);
+    Logic _op = Logic.AND;
 
     uint256 internal constant FACTORY_VERSION = 1;
     uint256 internal constant AGREEMENT_VERSION = 1;
@@ -21,12 +30,15 @@ contract RicardianTriplerDoubleTokenLexscrowTest is Test {
     address firstParty = address(1);
     address secondParty = address(2);
 
-    function setUp() public {
+    mapping(address => AgreementDetailsV1) public details;
+
+    function setUp() external {
+        //Condition[] calldata _cond = [Condition({condition: address(0), op: Logic.AND})];
+        _setDetails();
         address fakeAdmin = address(0xaa);
 
         registry = new DoubleTokenLexscrowRegistry(fakeAdmin);
         factory = new AgreementV1Factory(address(registry));
-        details = getMockAgreementDetails();
 
         vm.prank(fakeAdmin);
         registry.enableFactory(address(factory));
@@ -34,52 +46,25 @@ contract RicardianTriplerDoubleTokenLexscrowTest is Test {
 
     function testVersion() public {
         assertEq(FACTORY_VERSION, factory.version(), "factory version != 1");
-
-        RicardianTriplerDoubleTokenLexscrow newAgreement = new RicardianTriplerDoubleTokenLexscrow(details);
+        AgreementDetailsV1 storage mockDetails = details[address(this)];
+        RicardianTriplerDoubleTokenLexscrow newAgreement = new RicardianTriplerDoubleTokenLexscrow(mockDetails);
         assertEq(AGREEMENT_VERSION, newAgreement.version(), "agreement version != 1");
-    }
-
-    function testDetails() public {
-        RicardianTriplerDoubleTokenLexscrow newAgreement = new RicardianTriplerDoubleTokenLexscrow(details);
-        _assertEq(getMockAgreementDetails(), newAgreement.getDetails());
-    }
-
-    function _assertEq(AgreementDetailsV1 memory expected, AgreementDetailsV1 memory actual) public {
-        bytes memory expectedBytes = abi.encode(expected);
-        bytes memory actualBytes = abi.encode(actual);
-
-        assertEq0(expectedBytes, actualBytes);
     }
 
     function testProposeAndConfirmDoubleTokenLexscrowAgreement() public {
         ++firstPartyNonce;
         vm.prank(firstParty);
-        address _newAgreement = factory.proposeDoubleTokenLexscrowAgreement(
-            details
-        );
-        bytes32 _pendingHash = keccak256(abi.encode(details));
-        assertEq(
-            factory.pendingAgreement(firstParty, _newAgreement),
-            secondParty,
-            "secondParty should be pending"
-        );
-        assertTrue(
-            factory.pendingAgreementHash(_pendingHash),
-            "_pendingHash should be mapped to true"
-        );
+        AgreementDetailsV1 storage mockDetails = details[address(this)];
+        address _newAgreement = factory.proposeDoubleTokenLexscrowAgreement(mockDetails);
+        bytes32 _pendingHash = keccak256(abi.encode(mockDetails));
+        assertEq(factory.pendingAgreement(firstParty, _newAgreement), secondParty, "secondParty should be pending");
+        assertTrue(factory.pendingAgreementHash(_pendingHash), "_pendingHash should be mapped to true");
 
         vm.prank(secondParty);
-        factory.confirmAndAdoptDoubleTokenLexscrowAgreement(
-            _newAgreement,
-            firstParty,
-            details
-        );
+        factory.confirmAndAdoptDoubleTokenLexscrowAgreement(_newAgreement, firstParty, mockDetails);
 
-        assertEq(
-            registry.agreements(firstParty, firstPartyNonce),
-            _newAgreement,
-            "agreement address does not match"
-        );
+        assertEq(registry.agreements(firstParty, firstPartyNonce), _newAgreement, "agreement address does not match");
+        assertTrue(registry.signedAgreement(_newAgreement), "signedAgreement should be true for new agreement address");
 
         // if successful, this mapping should be deleted
         assertEq(
@@ -89,97 +74,152 @@ contract RicardianTriplerDoubleTokenLexscrowTest is Test {
         );
     }
 
-    function testProposeAndConfirmDoubleTokenLexscrowAgreement_invalid(
-        address _randomAddr
-    ) public {
+    function testProposeAndConfirmDoubleTokenLexscrowAgreement_invalid(address _randomAddr) public {
         ++firstPartyNonce;
+        AgreementDetailsV1 storage mockDetails = details[address(this)];
         vm.prank(firstParty);
-        address _newAgreement = factory.proposeDoubleTokenLexscrowAgreement(
-            details
-        );
-        bytes32 _pendingHash = keccak256(abi.encode(details));
-        assertEq(
-            factory.pendingAgreement(firstParty, _newAgreement),
-            secondParty,
-            "secondParty should be pending"
-        );
-        assertTrue(
-            factory.pendingAgreementHash(_pendingHash),
-            "_pendingHash should be mapped to true"
-        );
+        address _newAgreement = factory.proposeDoubleTokenLexscrowAgreement(mockDetails);
+        bytes32 _pendingHash = keccak256(abi.encode(mockDetails));
+        assertEq(factory.pendingAgreement(firstParty, _newAgreement), secondParty, "secondParty should be pending");
+        assertTrue(factory.pendingAgreementHash(_pendingHash), "_pendingHash should be mapped to true");
 
         vm.prank(_randomAddr);
         if (_randomAddr != secondParty) {
             vm.expectRevert();
-            factory.confirmAndAdoptDoubleTokenLexscrowAgreement(
-                _newAgreement,
-                firstParty,
-                details
-            );
+            factory.confirmAndAdoptDoubleTokenLexscrowAgreement(_newAgreement, firstParty, mockDetails);
 
             // 'secondParty' should still be pending
-            assertEq(
-                secondParty,
-                factory.pendingAgreement(firstParty, _newAgreement),
-                "second party not pending"
-            );
+            assertEq(secondParty, factory.pendingAgreement(firstParty, _newAgreement), "second party not pending");
             assertTrue(
                 factory.pendingAgreementHash(_pendingHash),
                 "_pendingHash should be mapped to true as still pending"
+            );
+            assertTrue(
+                !registry.signedAgreement(_newAgreement),
+                "signedAgreement should remain false for new agreement address"
+            );
+        }
+    }
+
+    function testDeployLexscrowAndProposeDoubleTokenLexscrowAgreement() public {
+        ++firstPartyNonce;
+        AgreementDetailsV1 storage mockDetails = details[address(this)];
+        vm.prank(firstParty);
+        address _newAgreement = factory.deployLexscrowAndProposeDoubleTokenLexscrowAgreement(
+            mockDetails,
+            address(this)
+        );
+        bytes32 _pendingHash = keccak256(abi.encode(mockDetails));
+        assertEq(factory.pendingAgreement(firstParty, _newAgreement), secondParty, "secondParty should be pending");
+        assertTrue(factory.pendingAgreementHash(_pendingHash), "_pendingHash should be mapped to true");
+
+        vm.prank(secondParty);
+        factory.confirmAndAdoptDoubleTokenLexscrowAgreement(_newAgreement, firstParty, mockDetails);
+
+        assertEq(registry.agreements(firstParty, firstPartyNonce), _newAgreement, "agreement address does not match");
+        assertTrue(registry.signedAgreement(_newAgreement), "signedAgreement should be true for new agreement address");
+
+        // if successful, this mapping should be deleted
+        assertEq(
+            address(0),
+            factory.pendingAgreement(firstParty, _newAgreement),
+            "pending Agreement mapping not reset"
+        );
+    }
+
+    function testDeployLexscrowAndProposeDoubleTokenLexscrowAgreement_invalid(address _randomAddr) public {
+        ++firstPartyNonce;
+        AgreementDetailsV1 storage mockDetails = details[address(this)];
+        vm.prank(firstParty);
+        address _newAgreement = factory.deployLexscrowAndProposeDoubleTokenLexscrowAgreement(
+            mockDetails,
+            address(this)
+        );
+        bytes32 _pendingHash = keccak256(abi.encode(mockDetails));
+        assertEq(factory.pendingAgreement(firstParty, _newAgreement), secondParty, "secondParty should be pending");
+        assertTrue(factory.pendingAgreementHash(_pendingHash), "_pendingHash should be mapped to true");
+
+        vm.prank(_randomAddr);
+        if (_randomAddr != secondParty) {
+            vm.expectRevert();
+            factory.confirmAndAdoptDoubleTokenLexscrowAgreement(_newAgreement, firstParty, mockDetails);
+
+            // 'secondParty' should still be pending
+            assertEq(secondParty, factory.pendingAgreement(firstParty, _newAgreement), "second party not pending");
+            assertTrue(
+                factory.pendingAgreementHash(_pendingHash),
+                "_pendingHash should be mapped to true as still pending"
+            );
+            assertTrue(
+                !registry.signedAgreement(_newAgreement),
+                "signedAgreement should remain false for new agreement address"
             );
         }
     }
 
     function testValidateAccount() public {
         Account memory account = Account({accountAddress: vm.addr(mockKey), signature: new bytes(0)});
-        bytes32 hash = keccak256(abi.encode(details));
+        AgreementDetailsV1 storage mockDetails = details[address(this)];
+        bytes32 hash = keccak256(abi.encode(mockDetails));
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(mockKey, hash);
         bytes memory signature = abi.encodePacked(r, s, v);
 
         account.signature = signature;
 
-        bool isValid = factory.validateAccount(details, account);
+        bool isValid = factory.validateAccount(mockDetails, account);
         assertTrue(isValid);
     }
 
     function testValidateAccount_invalid() public {
         Account memory account = Account({accountAddress: vm.addr(mockKey), signature: new bytes(0)});
         uint256 fakeKey = 200;
-
-        bytes32 hash = keccak256(abi.encode(details));
+        AgreementDetailsV1 storage mockDetails = details[address(this)];
+        bytes32 hash = keccak256(abi.encode(mockDetails));
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(fakeKey, hash);
         bytes memory signature = abi.encodePacked(r, s, v);
 
         account.signature = signature;
 
-        bool isValid = factory.validateAccount(details, account);
+        bool isValid = factory.validateAccount(mockDetails, account);
         assertTrue(!isValid);
     }
 
-    function getMockAgreementDetails() internal pure returns (AgreementDetailsV1 memory mockDetails) {
-        Party memory _partyA = Party({
-            partyBlockchainAddy: address(1),
-            partyName: "Party A",
-            contactDetails: "partyA@email.com"
-        });
-        Party memory _partyB = Party({
-            partyBlockchainAddy: address(2),
-            partyName: "Party B",
-            contactDetails: "partyB@email.com"
-        });
-        LockedAsset memory _lockedAssetPartyA = LockedAsset({tokenContract: address(3), totalAmount: 999999999999});
-        LockedAsset memory _lockedAssetPartyB = LockedAsset({tokenContract: address(4), totalAmount: 8888888888888});
-
-        mockDetails = AgreementDetailsV1({
-            partyA: _partyA,
-            partyB: _partyB,
-            lockedAssetPartyA: _lockedAssetPartyA,
-            lockedAssetPartyB: _lockedAssetPartyB,
-            legalAgreementURI: "ipfs://testHash",
-            governingLaw: "MetaLaW",
-            disputeResolutionMethod: "coin flip"
-        });
-
+    function getMockAgreementDetails() internal view returns (AgreementDetailsV1 storage) {
+        AgreementDetailsV1 storage mockDetails = details[address(this)];
         return mockDetails;
+    }
+
+    /// @dev simply mocked for testing, as this function is covered in the DoubleTokenLexscrowFactory.t.sol tests
+    function deployDoubleTokenLexscrow(
+        bool openOffer,
+        uint256 totalAmount1,
+        uint256 totalAmount2,
+        uint256 expirationTime,
+        address seller,
+        address buyer,
+        address tokenContract1,
+        address tokenContract2,
+        address receipt,
+        Condition[] calldata _conditions
+    ) public {}
+
+    function _setDetails() public {
+        _partyA = Party({partyBlockchainAddy: address(1), partyName: "Party A", contactDetails: "partyA@email.com"});
+        _partyB = Party({partyBlockchainAddy: address(2), partyName: "Party B", contactDetails: "partyB@email.com"});
+        _lockedAssetPartyA = LockedAsset({tokenContract: address(3), totalAmount: 999999999999});
+        _lockedAssetPartyB = LockedAsset({tokenContract: address(4), totalAmount: 8888888888888});
+        details[address(this)].conditions = emptyConditions;
+
+        AgreementDetailsV1 storage mockDetails = details[address(this)];
+
+        mockDetails.buyer = _partyA;
+        mockDetails.seller = _partyB;
+        mockDetails.lockedAssetBuyer = _lockedAssetPartyA;
+        mockDetails.lockedAssetSeller = _lockedAssetPartyB;
+        mockDetails.expirationTime = 9999999999999999;
+        mockDetails.receipt = address(0);
+        mockDetails.legalAgreementURI = "ipfs://testHash";
+        mockDetails.governingLaw = "MetaLaW";
+        mockDetails.disputeResolutionMethod = "coin flip";
     }
 }
