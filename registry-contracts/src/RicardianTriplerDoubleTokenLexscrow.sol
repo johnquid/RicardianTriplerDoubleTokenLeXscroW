@@ -19,11 +19,7 @@ interface IDoubleTokenLexscrowFactory {
 }
 
 interface IDoubleTokenLexscrowRegistry {
-    function recordAdoption(
-        address confirmingParty,
-        address proposingParty,
-        address agreementDetailsAddress
-    ) external;
+    function recordAdoption(address confirmingParty, address proposingParty, address agreementDetailsAddress) external;
 }
 
 ///
@@ -129,8 +125,7 @@ contract AgreementV1Factory is SignatureValidator {
     address public registry;
 
     /// @notice address of proposer of an agreement mapped to the pending agreement address, mapped to the second party address that must confirm adoption
-    mapping(address proposer => mapping(address pendingAgreement => address pendingParty))
-        public pendingAgreement;
+    mapping(address proposer => mapping(address pendingAgreement => address pendingParty)) public pendingAgreement;
 
     /// @notice hashed agreement details mapped to whether they match a pending agreement
     mapping(bytes32 => bool) public pendingAgreementHash;
@@ -139,10 +134,7 @@ contract AgreementV1Factory is SignatureValidator {
     error RicardianTriplerDoubleTokenLexscrow_NotParty();
 
     /// @notice event that fires if an address party to a DoubleTokenLeXscroW proposes a new RicardianTriplerDoubleTokenLexscrow contract
-    event RicardianTriplerDoubleTokenLexscrow_Proposed(
-        address proposer,
-        address pendingAgreementAddress
-    );
+    event RicardianTriplerDoubleTokenLexscrow_Proposed(address proposer, address pendingAgreementAddress);
 
     /// @notice Constructor that sets the DoubleTokenLexscrowRegistry address.
     /// @dev no access control necessary as valid factories are set by the `admin` in the `registry` contract
@@ -155,31 +147,20 @@ contract AgreementV1Factory is SignatureValidator {
     /// other party to the DoubleTokenLeXscroW.
     /// @param details The details of the proposed agreement, as an `AgreementDetailsV1` struct
     /// @return _agreementAddress address of the pending `RicardianTriplerDoubleTokenLexscrow` agreement
-    function proposeDoubleTokenLexscrowAgreement(
-        AgreementDetailsV1 memory details
-    ) external returns (address) {
-        RicardianTriplerDoubleTokenLexscrow agreementDetails = new RicardianTriplerDoubleTokenLexscrow(
-                details
-            );
+    function proposeDoubleTokenLexscrowAgreement(AgreementDetailsV1 calldata details) external returns (address) {
+        RicardianTriplerDoubleTokenLexscrow agreementDetails = new RicardianTriplerDoubleTokenLexscrow(details);
         address _agreementAddress = address(agreementDetails);
 
         // if msg.sender is `buyer`, nested map it to the pending agreement to the address that needs to confirm adoption, and vice versa if `seller`; else, revert
         if (msg.sender == details.buyer.partyBlockchainAddy)
-            pendingAgreement[msg.sender][_agreementAddress] = details
-                .seller
-                .partyBlockchainAddy;
+            pendingAgreement[msg.sender][_agreementAddress] = details.seller.partyBlockchainAddy;
         else if (msg.sender == details.seller.partyBlockchainAddy)
-            pendingAgreement[msg.sender][_agreementAddress] = details
-                .buyer
-                .partyBlockchainAddy;
+            pendingAgreement[msg.sender][_agreementAddress] = details.buyer.partyBlockchainAddy;
         else revert RicardianTriplerDoubleTokenLexscrow_NotParty();
 
         pendingAgreementHash[keccak256(abi.encode(details))] = true;
 
-        emit RicardianTriplerDoubleTokenLexscrow_Proposed(
-            msg.sender,
-            _agreementAddress
-        );
+        emit RicardianTriplerDoubleTokenLexscrow_Proposed(msg.sender, _agreementAddress);
         return (_agreementAddress);
     }
 
@@ -191,45 +172,35 @@ contract AgreementV1Factory is SignatureValidator {
     /// @param _doubleTokenLexscrowFactory contract address of the DoubleTokenLexscrowFactory.sol which will be used to deploy a DoubleTokenLexscrow
     /// @return _agreementAddress address of the pending `RicardianTriplerDoubleTokenLexscrow` agreement
     function deployLexscrowAndProposeDoubleTokenLexscrowAgreement(
-        AgreementDetailsV1 memory details,
+        AgreementDetailsV1 calldata details,
         address _doubleTokenLexscrowFactory
     ) external returns (address) {
-        IDoubleTokenLexscrowFactory(_doubleTokenLexscrowFactory)
-            .deployDoubleTokenLexscrow(
-                false, // `buyer` must be identified-- cannot be an `openOffer`
-                details.lockedAssetBuyer.totalAmount, // `totalAmount1`
-                details.lockedAssetSeller.totalAmount, // `totalAmount2`
-                details.expirationTime,
-                details.seller.partyBlockchainAddy, // `seller`, locking `lockedAssetSeller`
-                details.buyer.partyBlockchainAddy, // `buyer`, locking `lockedAssetBuyer`
-                details.lockedAssetBuyer.tokenContract, // `totalContract1`
-                details.lockedAssetSeller.tokenContract, // `totalContract2`
-                details.receipt,
-                details.conditions
-            );
+        IDoubleTokenLexscrowFactory(_doubleTokenLexscrowFactory).deployDoubleTokenLexscrow(
+            false, // `buyer` must be identified-- cannot be an `openOffer`
+            details.lockedAssetBuyer.totalAmount, // `totalAmount1`
+            details.lockedAssetSeller.totalAmount, // `totalAmount2`
+            details.expirationTime,
+            details.seller.partyBlockchainAddy, // `seller`, locking `lockedAssetSeller`
+            details.buyer.partyBlockchainAddy, // `buyer`, locking `lockedAssetBuyer`
+            details.lockedAssetBuyer.tokenContract, // `totalContract1`
+            details.lockedAssetSeller.tokenContract, // `totalContract2`
+            details.receipt,
+            details.conditions
+        );
 
-        RicardianTriplerDoubleTokenLexscrow agreementDetails = new RicardianTriplerDoubleTokenLexscrow(
-                details
-            );
+        RicardianTriplerDoubleTokenLexscrow agreementDetails = new RicardianTriplerDoubleTokenLexscrow(details);
         address _agreementAddress = address(agreementDetails);
 
         // if msg.sender is `buyer`, nested map it to the pending agreement to the address that needs to confirm adoption, and vice versa if `seller`; else, revert
         if (msg.sender == details.buyer.partyBlockchainAddy)
-            pendingAgreement[msg.sender][_agreementAddress] = details
-                .seller
-                .partyBlockchainAddy;
+            pendingAgreement[msg.sender][_agreementAddress] = details.seller.partyBlockchainAddy;
         else if (msg.sender == details.seller.partyBlockchainAddy)
-            pendingAgreement[msg.sender][_agreementAddress] = details
-                .buyer
-                .partyBlockchainAddy;
+            pendingAgreement[msg.sender][_agreementAddress] = details.buyer.partyBlockchainAddy;
         else revert RicardianTriplerDoubleTokenLexscrow_NotParty();
 
         pendingAgreementHash[keccak256(abi.encode(details))] = true;
 
-        emit RicardianTriplerDoubleTokenLexscrow_Proposed(
-            msg.sender,
-            _agreementAddress
-        );
+        emit RicardianTriplerDoubleTokenLexscrow_Proposed(msg.sender, _agreementAddress);
         return (_agreementAddress);
     }
 
@@ -241,37 +212,28 @@ contract AgreementV1Factory is SignatureValidator {
     function confirmAndAdoptDoubleTokenLexscrowAgreement(
         address pendingAgreementAddress,
         address proposingParty,
-        AgreementDetailsV1 memory details
+        AgreementDetailsV1 calldata details
     ) external {
         bytes32 pendingHash = keccak256(abi.encode(details));
         if (
-            pendingAgreement[proposingParty][pendingAgreementAddress] !=
-            msg.sender ||
+            pendingAgreement[proposingParty][pendingAgreementAddress] != msg.sender ||
             !pendingAgreementHash[pendingHash]
         ) revert RicardianTriplerDoubleTokenLexscrow_NoPendingAgreement();
 
         delete pendingAgreement[proposingParty][pendingAgreementAddress];
         delete pendingAgreementHash[pendingHash];
 
-        IDoubleTokenLexscrowRegistry(registry).recordAdoption(
-            msg.sender,
-            proposingParty,
-            pendingAgreementAddress
-        );
+        IDoubleTokenLexscrowRegistry(registry).recordAdoption(msg.sender, proposingParty, pendingAgreementAddress);
     }
 
     /// @notice validate that an `account` has signed the hashed agreement details
     /// @param details `AgreementDetailsV1` struct of the agreement details to which `account` is being validated as signed
     /// @param account `Account` struct of the account which is being validated as having signed `details`
-    function validateAccount(
-        AgreementDetailsV1 memory details,
-        Account memory account
-    ) external view returns (bool) {
+    function validateAccount(AgreementDetailsV1 calldata details, Account memory account) external view returns (bool) {
         bytes32 hash = keccak256(abi.encode(details));
 
         // Verify that the account's accountAddress signed the hashed details.
-        return
-            isSignatureValid(account.accountAddress, hash, account.signature);
+        return isSignatureValid(account.accountAddress, hash, account.signature);
     }
 
     /// @notice Function that returns the version of the agreement factory.
