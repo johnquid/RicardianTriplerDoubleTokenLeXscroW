@@ -51,14 +51,14 @@ struct AgreementDetailsV1 {
     uint256 expirationTime;
     /// @notice optional contract to return an informational receipt of a `LockedAsset` value, otherwise address(0)
     address receipt;
-    /// @notice array of `Condition` structs upon which the DoubleTokenLexscrow is contingent
-    Condition[] conditions;
     /// @notice IPFS hash of the official MetaLeX LeXscroW Agreement version being agreed to which confirms all terms, and may contain a unique interface identifier
     string legalAgreementURI;
     /// @notice governing law for the Agreement
     string governingLaw;
     /// @notice dispute resolution elected by the parties
     string disputeResolutionMethod;
+    /// @notice array of `Condition` structs upon which the DoubleTokenLexscrow is contingent
+    Condition[] conditions;
 }
 
 /// @notice match `Condition` as defined in LexscrowConditionManager
@@ -89,7 +89,7 @@ struct Party {
 /// CONTRACTS
 ///
 
-/// @notice Contract that contains the AgreementDetails that will be deployed by the Agreement Factory.
+/// @notice Contract that contains the Double Token LeXscroW agreement details that will be deployed by the Agreement Factory.
 contract RicardianTriplerDoubleTokenLexscrow {
     uint256 internal constant AGREEMENT_VERSION = 1;
 
@@ -97,9 +97,25 @@ contract RicardianTriplerDoubleTokenLexscrow {
     AgreementDetailsV1 internal details;
 
     /// @notice Constructor that sets the details of the agreement.
-    /// @param _details The details of the agreement.
+    /// @param _details the `AgreementDetailsV1` struct containing the details of the agreement.
     constructor(AgreementDetailsV1 memory _details) {
-        details = _details;
+        details.buyer = _details.buyer;
+        details.seller = _details.seller;
+        details.lockedAssetBuyer = _details.lockedAssetBuyer;
+        details.lockedAssetSeller = _details.lockedAssetSeller;
+        details.expirationTime = _details.expirationTime;
+        details.receipt = _details.receipt;
+        details.legalAgreementURI = _details.legalAgreementURI;
+        details.governingLaw = _details.governingLaw;
+        details.disputeResolutionMethod = _details.disputeResolutionMethod;
+
+        // necessary for copying dynamic array of structs to storage
+        for (uint256 i = 0; i < _details.conditions.length; ) {
+            details.conditions.push(_details.conditions[i]);
+            unchecked {
+                ++i; // cannot overflow without hitting gaslimit
+            }
+        }
     }
 
     /// @notice Function that returns the version of the agreement.
@@ -117,6 +133,7 @@ contract RicardianTriplerDoubleTokenLexscrow {
 
 /// @notice Factory contract that creates new RicardianTriplerDoubleTokenLexscrow contracts if confirmed properly by both parties
 /// and records their adoption in the DoubleTokenLexscrowRegistry. Either party may propose the agreement adoption, for the other to confirm.
+/// Also contains an option to deploy a Double Token LeXscroW simultaneously with proposing an agreement to ensure the parameters are identical.
 /// @dev various events emitted in the `registry` contract
 contract AgreementV1Factory is SignatureValidator {
     uint256 internal constant FACTORY_VERSION = 1;
