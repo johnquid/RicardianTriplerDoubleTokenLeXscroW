@@ -5,22 +5,14 @@ pragma solidity ^0.8.18;
 import {Test} from "forge-std/Test.sol";
 import {console} from "forge-std/console.sol";
 import {Vm} from "forge-std/Vm.sol";
-import "../src/DoubleTokenLexscrowRegistry.sol";
-import "../src/RicardianTriplerDoubleTokenLexscrow.sol";
+import "temp/DoubleTokenLexscrowRegistry.sol";
+import "temp/RicardianTriplerDoubleTokenLexscrow.sol";
 
-/// @dev forge t --via-ir
 contract RicardianTriplerDoubleTokenLexscrowTest is Test {
     DoubleTokenLexscrowRegistry registry;
     AgreementV1Factory factory;
-    Party _partyA;
-    Party _partyB;
-    LockedAsset _lockedAssetPartyA;
-    LockedAsset _lockedAssetPartyB;
 
     Condition[] internal emptyConditions;
-
-    address _zero = address(0);
-    Logic _op = Logic.AND;
 
     uint256 internal constant FACTORY_VERSION = 1;
     uint256 internal constant AGREEMENT_VERSION = 1;
@@ -33,7 +25,6 @@ contract RicardianTriplerDoubleTokenLexscrowTest is Test {
     mapping(address => AgreementDetailsV1) public details;
 
     function setUp() external {
-        //Condition[] calldata _cond = [Condition({condition: address(0), op: Logic.AND})];
         _setDetails();
         address fakeAdmin = address(0xaa);
 
@@ -184,11 +175,6 @@ contract RicardianTriplerDoubleTokenLexscrowTest is Test {
         assertTrue(!isValid);
     }
 
-    function getMockAgreementDetails() internal view returns (AgreementDetailsV1 storage) {
-        AgreementDetailsV1 storage mockDetails = details[address(this)];
-        return mockDetails;
-    }
-
     /// @dev simply mocked for testing, as this function is covered in the DoubleTokenLexscrowFactory.t.sol tests
     function deployDoubleTokenLexscrow(
         bool openOffer,
@@ -204,22 +190,25 @@ contract RicardianTriplerDoubleTokenLexscrowTest is Test {
     ) public {}
 
     function _setDetails() public {
-        _partyA = Party({partyBlockchainAddy: address(1), partyName: "Party A", contactDetails: "partyA@email.com"});
-        _partyB = Party({partyBlockchainAddy: address(2), partyName: "Party B", contactDetails: "partyB@email.com"});
-        _lockedAssetPartyA = LockedAsset({tokenContract: address(3), totalAmount: 999999999999});
-        _lockedAssetPartyB = LockedAsset({tokenContract: address(4), totalAmount: 8888888888888});
-        details[address(this)].conditions = emptyConditions;
-
         AgreementDetailsV1 storage mockDetails = details[address(this)];
 
-        mockDetails.buyer = _partyA;
-        mockDetails.seller = _partyB;
-        mockDetails.lockedAssetBuyer = _lockedAssetPartyA;
-        mockDetails.lockedAssetSeller = _lockedAssetPartyB;
+        mockDetails.buyer = Party({
+            partyBlockchainAddy: address(1),
+            partyName: "Party A",
+            contactDetails: "partyA@email.com"
+        });
+        mockDetails.seller = Party({
+            partyBlockchainAddy: address(2),
+            partyName: "Party B",
+            contactDetails: "partyB@email.com"
+        });
+        mockDetails.lockedAssetBuyer = LockedAsset({tokenContract: address(3), totalAmount: 999999999999});
+        mockDetails.lockedAssetSeller = LockedAsset({tokenContract: address(4), totalAmount: 8888888888888});
         mockDetails.expirationTime = 9999999999999999;
         mockDetails.receipt = address(0);
         mockDetails.legalAgreementURI = "ipfs://testHash";
         mockDetails.governingLaw = "MetaLaW";
         mockDetails.disputeResolutionMethod = "coin flip";
+        mockDetails.conditions = emptyConditions;
     }
 }
