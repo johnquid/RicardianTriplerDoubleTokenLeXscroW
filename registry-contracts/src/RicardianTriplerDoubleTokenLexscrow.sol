@@ -9,8 +9,8 @@ interface IDoubleTokenLexscrowFactory {
         uint256 totalAmount1,
         uint256 totalAmount2,
         uint256 expirationTime,
-        address PartyB,
-        address PartyA,
+        address seller,
+        address buyer,
         address tokenContract1,
         address tokenContract2,
         address receipt,
@@ -42,8 +42,8 @@ struct Account {
 /// @notice the details of the agreement, consisting of all necessary information to deploy a DoubleTokenLexscrow and the legal agreement information
 struct AgreementDetailsV1 {
     /// @notice The details of the parties adopting the agreement
-    Party PartyA;
-    Party PartyB;
+    Party partyA;
+    Party partyB;
     /// @notice The assets and amounts being escrowed by each party
     LockedAsset lockedAssetPartyA;
     LockedAsset lockedAssetPartyB;
@@ -75,7 +75,7 @@ struct LockedAsset {
     uint256 totalAmount;
 }
 
-/// @notice details of a party (`PartyB` or `PartyA`): address, name, and contact information
+/// @notice details of a party (`partyB` or `partyA`): address, name, and contact information
 struct Party {
     /// @notice The blockchain address of the party
     address partyBlockchainAddy;
@@ -99,8 +99,8 @@ contract RicardianTriplerDoubleTokenLexscrow {
     /// @notice Constructor that sets the details of the agreement.
     /// @param _details the `AgreementDetailsV1` struct containing the details of the agreement.
     constructor(AgreementDetailsV1 memory _details) {
-        details.PartyA = _details.PartyA;
-        details.PartyB = _details.PartyB;
+        details.partyA = _details.partyA;
+        details.partyB = _details.partyB;
         details.lockedAssetPartyA = _details.lockedAssetPartyA;
         details.lockedAssetPartyB = _details.lockedAssetPartyB;
         details.expirationTime = _details.expirationTime;
@@ -168,11 +168,11 @@ contract AgreementV1Factory is SignatureValidator {
         RicardianTriplerDoubleTokenLexscrow agreementDetails = new RicardianTriplerDoubleTokenLexscrow(details);
         address _agreementAddress = address(agreementDetails);
 
-        // if msg.sender is `PartyA`, nested map it to the pending agreement to the address that needs to confirm adoption, and vice versa if `PartyB`; else, revert
-        if (msg.sender == details.PartyA.partyBlockchainAddy)
-            pendingAgreement[msg.sender][_agreementAddress] = details.PartyB.partyBlockchainAddy;
-        else if (msg.sender == details.PartyB.partyBlockchainAddy)
-            pendingAgreement[msg.sender][_agreementAddress] = details.PartyA.partyBlockchainAddy;
+        // if msg.sender is `partyA`, nested map it to the pending agreement to the address that needs to confirm adoption, and vice versa if `partyB`; else, revert
+        if (msg.sender == details.partyA.partyBlockchainAddy)
+            pendingAgreement[msg.sender][_agreementAddress] = details.partyB.partyBlockchainAddy;
+        else if (msg.sender == details.partyB.partyBlockchainAddy)
+            pendingAgreement[msg.sender][_agreementAddress] = details.partyA.partyBlockchainAddy;
         else revert RicardianTriplerDoubleTokenLexscrow_NotParty();
 
         pendingAgreementHash[keccak256(abi.encode(details))] = true;
@@ -193,12 +193,12 @@ contract AgreementV1Factory is SignatureValidator {
         address _doubleTokenLexscrowFactory
     ) external returns (address) {
         IDoubleTokenLexscrowFactory(_doubleTokenLexscrowFactory).deployDoubleTokenLexscrow(
-            false, // `PartyA` must be identified-- cannot be an `openOffer`
+            false, // `partyA` must be identified-- cannot be an `openOffer`
             details.lockedAssetPartyA.totalAmount, // `totalAmount1`
             details.lockedAssetPartyB.totalAmount, // `totalAmount2`
             details.expirationTime,
-            details.PartyB.partyBlockchainAddy, // `PartyB`, locking `lockedAssetPartyB`
-            details.PartyA.partyBlockchainAddy, // `PartyA`, locking `lockedAssetPartyA`
+            details.partyB.partyBlockchainAddy, // `partyB`, corresponding to `seller` in the Double Token LeXscroW, locking `lockedAssetPartyB`
+            details.partyA.partyBlockchainAddy, // `partyA`, corresponding to `buyer` in the Double Token LeXscroW, locking `lockedAssetPartyA`
             details.lockedAssetPartyA.tokenContract, // `totalContract1`
             details.lockedAssetPartyB.tokenContract, // `totalContract2`
             details.receipt,
@@ -208,11 +208,11 @@ contract AgreementV1Factory is SignatureValidator {
         RicardianTriplerDoubleTokenLexscrow agreementDetails = new RicardianTriplerDoubleTokenLexscrow(details);
         address _agreementAddress = address(agreementDetails);
 
-        // if msg.sender is `PartyA`, nested map it to the pending agreement to the address that needs to confirm adoption, and vice versa if `PartyB`; else, revert
-        if (msg.sender == details.PartyA.partyBlockchainAddy)
-            pendingAgreement[msg.sender][_agreementAddress] = details.PartyB.partyBlockchainAddy;
-        else if (msg.sender == details.PartyB.partyBlockchainAddy)
-            pendingAgreement[msg.sender][_agreementAddress] = details.PartyA.partyBlockchainAddy;
+        // if msg.sender is `partyA`, nested map it to the pending agreement to the address that needs to confirm adoption, and vice versa if `partyB`; else, revert
+        if (msg.sender == details.partyA.partyBlockchainAddy)
+            pendingAgreement[msg.sender][_agreementAddress] = details.partyB.partyBlockchainAddy;
+        else if (msg.sender == details.partyB.partyBlockchainAddy)
+            pendingAgreement[msg.sender][_agreementAddress] = details.partyA.partyBlockchainAddy;
         else revert RicardianTriplerDoubleTokenLexscrow_NotParty();
 
         pendingAgreementHash[keccak256(abi.encode(details))] = true;
