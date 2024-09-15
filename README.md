@@ -41,6 +41,33 @@ A user may check if a `RicardianTriplerDoubleTokenLexscrow` agreement was mutual
   
 Each party's onchain transaction to propose and confirm (as applicable) the agreement details constitutes legally binding action, so each transacting address should represent the decision-making authority of the applicable party to the Double Token LeXscroW.
 
+## Arbitration
 
+Implied warranties can arise (or be excluded or modified) as a  
+result of *course of [dealing](https://metalex.substack.com/i/142402118/phase-deal-technology)*  (prior conduct between the parties),  
+or usage of trade. May include inducing others to try something  
+on the basis of one’s positive review (attractive nuisance doctrine).  
 
+In the absence of unanimous evidence to the contrary,  when  
+both signing parties to a sales / lease contract (or service-level  
+agreement) have knowledge of a [well-recognized](https://x.com/lex_node/status/1831514207227101477) trade custom,  
+arbitration will infer that both parties intended for said trade  
+custom to apply to their contract, according to a hypothetical  
+reasonable person standard. It is society’s judgement of how  
+an ordinarily prudent person would act (conscientiously, etc.)
+
+For professionals, a standard level of special knowledge and  
+training or expertise is considered. Informal agreements are   
+unilateral based on their substance rather  than their form.  
+Most agreements are informal, containing a mix of express  
+terms and implied terms: contests, lotteries, and other such   
+competitions are common examples of unilateral contracts.
+
+Gross negligence in relation to reasonable duty of care can  
+be defined as an intentional failure to perform. This is rare.  
+The standard of comparative negligence applies to most  
+cases. Both the plaintiff’s and the defendant’s negligence  
+are computed, and the liability for damages is distributed  
+accordingly. We apply a 50% rule, preventing the plaintiff  
+from recovering any damages if they were >50% at fault.
 

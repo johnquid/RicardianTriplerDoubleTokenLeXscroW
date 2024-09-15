@@ -2,6 +2,7 @@
 pragma solidity ^0.8.18;
 
 import "./SignatureValidator.sol";
+import "./Moderate.sol"
 
 interface IDoubleTokenLexscrowFactory {
     function deployDoubleTokenLexscrow(
@@ -55,10 +56,12 @@ struct AgreementDetailsV1 {
     string legalAgreementURI;
     /// @notice governing law for the Agreement
     string governingLaw;
-    /// @notice dispute resolution elected by the parties
-    string disputeResolutionMethod;
+    // @notice dispute resolution elected by the parties (initially empty)
+    Dispute[] disputes; 
     /// @notice array of `Condition` structs upon which the DoubleTokenLexscrow is contingent
+    /// (that must be done to accept the offer, and be bound by, or bonded to, the agreement)
     Condition[] conditions;
+    // TODO perhaps add granularity (e.g. 0...4 must be fulfilled, and at least 2 of 5...11)
 }
 
 /// @notice match `Condition` as defined in LexscrowConditionManager
@@ -116,6 +119,21 @@ contract RicardianTriplerDoubleTokenLexscrow {
                 ++i; // cannot overflow without hitting gaslimit
             }
         }
+    }
+
+    // All parties agree to reassignment of a party
+    function novation() external {
+
+    }
+
+
+    function recision() external {
+
+    }
+
+    // creates a dispute
+    function injunction() external {
+
     }
 
     /// @notice Function that returns the version of the agreement.
