@@ -6,10 +6,14 @@
 
 Smart contracts for the adoption of Double Token LeXscroW Agreement as a ['ricardian triple'](https://financialcryptography.com/mt/archives/001556.html). 
 
-## What's in this repo?
+## What's in *this* repo?
 
 - [documents/agreement.pdf](documents/agreement.pdf) - MetaLeX Double Token LeXscroW Agreement v1 
 - [registry-contracts/](registry-contracts/) - the smart contracts that parties call to parameterize and sign the agreement 
+
+## External auxiliary repo
+- [Quid]() allows the dollar value of tokens to be fully insured while  
+  locked in escrow, in a fully trustless way (currently ETH only). 
 
 ## How does it work?
 

@@ -5,7 +5,7 @@ pragma solidity ^0.8.18;
 
 enum AffadavitType {
     ENDORSEMENT, // We look forward to mostly seeing endorsements
-    COUNTERCLAIM, // (no one is encouraging excessive litigiousness) 
+    COUNTERCLAIM, // (not encouraging tortious litigiousness)...
 }
 
 struct Affadavit {
@@ -13,7 +13,6 @@ struct Affadavit {
     //  (if type objection what is the alleged civil wrong, 
     //  if type endorsement, was the quality of service up to standard) 
     string description;
-
 }
 
 /// @notice the details of an account in an agreement
@@ -63,6 +62,7 @@ enum Objection {
     LEADING,
     RELEVANCY
 }
+
 
 // voirDire(disputeId, jurorId) 
 // for expert witnesses or investigators (jury), 

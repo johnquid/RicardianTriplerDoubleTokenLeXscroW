@@ -2,7 +2,7 @@
 pragma solidity ^0.8.18;
 
 import "./SignatureValidator.sol";
-import "./Moderate.sol"
+import "./Mediate.sol"
 
 interface IDoubleTokenLexscrowFactory {
     function deployDoubleTokenLexscrow(
@@ -10,8 +10,8 @@ interface IDoubleTokenLexscrowFactory {
         uint256 totalAmount1,
         uint256 totalAmount2,
         uint256 expirationTime,
-        address seller,
-        address buyer,
+        address agent,
+        address principal,
         address tokenContract1,
         address tokenContract2,
         address receipt,
@@ -61,7 +61,7 @@ struct AgreementDetailsV1 {
     /// @notice array of `Condition` structs upon which the DoubleTokenLexscrow is contingent
     /// (that must be done to accept the offer, and be bound by, or bonded to, the agreement)
     Condition[] conditions;
-    // TODO perhaps add granularity (e.g. 0...4 must be fulfilled, and at least 2 of 5...11)
+    
 }
 
 /// @notice match `Condition` as defined in LexscrowConditionManager
@@ -120,6 +120,8 @@ contract RicardianTriplerDoubleTokenLexscrow {
             }
         }
     }
+
+
 
     // All parties agree to reassignment of a party
     function novation() external {
@@ -215,8 +217,8 @@ contract AgreementV1Factory is SignatureValidator {
             details.lockedAssetPartyA.totalAmount, // `totalAmount1`
             details.lockedAssetPartyB.totalAmount, // `totalAmount2`
             details.expirationTime,
-            details.partyB.partyBlockchainAddy, // `partyB`, corresponding to `seller` in the Double Token LeXscroW, locking `lockedAssetPartyB`
-            details.partyA.partyBlockchainAddy, // `partyA`, corresponding to `buyer` in the Double Token LeXscroW, locking `lockedAssetPartyA`
+            details.partyB.partyBlockchainAddy, // `partyB`, corresponding to `agent` in the Double Token LeXscroW, locking `lockedAssetPartyB`
+            details.partyA.partyBlockchainAddy, // `partyA`, corresponding to `principal` in the Double Token LeXscroW, locking `lockedAssetPartyA`
             details.lockedAssetPartyA.tokenContract, // `totalContract1`
             details.lockedAssetPartyB.tokenContract, // `totalContract2`
             details.receipt,
