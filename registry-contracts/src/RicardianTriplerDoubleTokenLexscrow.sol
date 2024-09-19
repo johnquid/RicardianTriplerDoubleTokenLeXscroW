@@ -46,6 +46,7 @@ struct AgreementDetailsV1 {
     Party partyA;
     Party partyB;
     /// @notice The assets and amounts being escrowed by each party
+    // TODO change to offer struct according to Moulinette
     LockedAsset lockedAssetPartyA;
     LockedAsset lockedAssetPartyB;
     /// @notice block.timestamp expiration time
@@ -60,14 +61,17 @@ struct AgreementDetailsV1 {
     Dispute[] disputes; 
     /// @notice array of `Condition` structs upon which the DoubleTokenLexscrow is contingent
     /// (that must be done to accept the offer, and be bound by, or bonded to, the agreement)
-    Condition[] conditions;
-    
+    Condition[] conditions; // a condition that ust be fulfilled before a party's performance
+    // can be be required is called a condition precedent, where codition precedes absolute
+    // duty to perform (e.g. life insurance contracts frequently specify certain conditions)
 }
 
 /// @notice match `Condition` as defined in LexscrowConditionManager
-struct Condition {
-    address condition;
-    Logic op;
+// A condition is a qualification made by the fold function in Quid
+struct Condition { // based on a future possibility. The occurence
+// or non-occurence of the event over a certain passage of time... 
+    address condition; // may trigger the performance of a legal
+    Logic op; // opligation or terminate an existing obligation.
 }
 
 /// @notice the details of a locked asset
@@ -129,8 +133,15 @@ contract RicardianTriplerDoubleTokenLexscrow {
     }
 
 
+    // for mutual recission to take place
+    // parties must make another agreement
+    // promises not to perform the acts
+    // stipulated in original contract
+    // will be legal consideration for
+    // the second contract (recission)
     function recision() external {
-
+        
+        AGREEMENT_VERSION += 1;
     }
 
     // creates a dispute
@@ -165,7 +176,10 @@ contract AgreementV1Factory is SignatureValidator {
     mapping(address proposer => mapping(address pendingAgreement => address pendingParty)) public pendingAgreement;
 
     /// @notice hashed agreement details mapped to whether they match a pending agreement
+    // before either party to a constract has a duty to perform, one of the parties may
+    // refuse to carry out his or her contractual obligations (anticipatory repudtiation)
     mapping(bytes32 => bool) public pendingAgreementHash;
+
 
     error RicardianTriplerDoubleTokenLexscrow_NoPendingAgreement();
     error RicardianTriplerDoubleTokenLexscrow_NotParty();
